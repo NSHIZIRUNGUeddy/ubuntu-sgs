@@ -69,7 +69,6 @@ label{font-size:.8rem;color:var(--mu)}
 <div id="te" hidden>
 <div class="row"><div><label>Name</label><input id="fn"></div><div><label>Category</label><select id="fc"><option>Tees</option><option>Shorts</option><option>Hoodies</option><option>Juggles</option><option>Undershirts</option></select></div></div>
 <div class="row"><div><label>Price (RWF)</label><input id="fp" type="number"></div><div><label>Sizes (comma separated)</label><input id="fs" value="S,M,L,XL"></div></div>
-<label>Size guide (one line per size)</label><textarea id="fg" rows="4" placeholder="S: chest 96cm, length 68cm&#10;M: chest 102cm, length 70cm"></textarea>
 <div class="row" style="margin-top:10px"><div><label>Add photos (select one or more)</label><input id="ff" type="file" accept="image/*" multiple></div><div><label><input id="fx" type="checkbox" checked style="width:auto"> Show in collection</label></div></div>
 <p style="color:var(--mu);font-size:.8rem;margin:10px 0 0">Saved photos (the first one is the cover):</p><div id="gal" style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px"></div>
 <button class="btn" id="fsv">Save product</button> <span id="fm" style="color:var(--mu)"></span></div>
@@ -107,7 +106,7 @@ $('#tp').onclick=async e=>{const t=e.target;
  if(t.dataset.dl&&confirm('Delete this product?')){const p=list.find(x=>x.id==t.dataset.dl);
   const {error}=await sb.from('products').delete().eq('id',p.id);if(error){alert(error.message);return}
   imgsOf(p).forEach(rmImg);loadList()}};
-function form(p){$('#fn').value=p.name||'';$('#fc').value=p.category||'Tees';$('#fp').value=p.price||'';$('#fs').value=p.sizes||'S,M,L,XL';$('#fg').value=p.size_guide||'';$('#fx').checked=p.featured!==false;$('#ff').value='';gal=imgsOf(p).slice();removed=[];drawGal();$('#fm').textContent=''}
+function form(p){$('#fn').value=p.name||'';$('#fc').value=p.category||'Tees';$('#fp').value=p.price||'';$('#fs').value=p.sizes||'S,M,L,XL';$('#fx').checked=p.featured!==false;$('#ff').value='';gal=imgsOf(p).slice();removed=[];drawGal();$('#fm').textContent=''}
 function rmImg(u){if(u&&u.includes('/products/'))sb.storage.from('products').remove([u.split('/products/').pop()])}
 function shrink(f,w){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,w/i.width),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(r,'image/webp',.82)};i.src=URL.createObjectURL(f)})}
 $('#fsv').onclick=async()=>{const m=$('#fm'),b=$('#fsv');
@@ -118,7 +117,7 @@ $('#fsv').onclick=async()=>{const m=$('#fm'),b=$('#fsv');
    const blob=await shrink(fs[i],900),path=Date.now()+'-'+i+'.webp';
    const up=await sb.storage.from('products').upload(path,blob,{contentType:'image/webp'});if(up.error)throw up.error;
    urls.push(sb.storage.from('products').getPublicUrl(path).data.publicUrl)}
-  const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',size_guide:$('#fg').value,images:urls,image_url:urls[0]||null,featured:$('#fx').checked};
+  const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',images:urls,image_url:urls[0]||null,featured:$('#fx').checked};
   const r=editing?await sb.from('products').update(row).eq('id',editing):await sb.from('products').insert(row);
   if(r.error)throw r.error;
   removed.forEach(rmImg);removed=[];editing=null;tab('p')}
