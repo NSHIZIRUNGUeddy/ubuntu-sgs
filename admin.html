@@ -70,7 +70,8 @@ label{font-size:.8rem;color:var(--mu)}
 <div class="row"><div><label>Name</label><input id="fn"></div><div><label>Category</label><select id="fc"><option>Tees</option><option>Shorts</option><option>Hoodies</option><option>Juggles</option><option>Undershirts</option></select></div></div>
 <div class="row"><div><label>Price (RWF)</label><input id="fp" type="number"></div><div><label>Sizes (comma separated)</label><input id="fs" value="S,M,L,XL"></div></div>
 <label>Size guide (one line per size)</label><textarea id="fg" rows="4" placeholder="S: chest 96cm, length 68cm&#10;M: chest 102cm, length 70cm"></textarea>
-<div class="row" style="margin-top:10px"><div><label>Photo</label><input id="ff" type="file" accept="image/*"></div><div><label><input id="fx" type="checkbox" checked style="width:auto"> Show in collection</label></div></div>
+<div class="row" style="margin-top:10px"><div><label>Add photos (select one or more)</label><input id="ff" type="file" accept="image/*" multiple></div><div><label><input id="fx" type="checkbox" checked style="width:auto"> Show in collection</label></div></div>
+<p style="color:var(--mu);font-size:.8rem;margin:10px 0 0">Saved photos (the first one is the cover):</p><div id="gal" style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px"></div>
 <button class="btn" id="fsv">Save product</button> <span id="fm" style="color:var(--mu)"></span></div>
 <div id="ta" hidden></div>
 </div></main>
@@ -80,7 +81,10 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fmt=n=>Number(n).toLocaleString('en-US')+' RWF';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sb=(window.supabase&&SB_URL.startsWith('http'))?supabase.createClient(SB_URL,SB_KEY):null;
-let list=[],editing=null,img='';
+let list=[],editing=null,gal=[],removed=[];
+const imgsOf=p=>Array.isArray(p.images)&&p.images.length?p.images:(p.image_url?[p.image_url]:[]);
+function drawGal(){$('#gal').innerHTML=gal.length?gal.map((u,i)=>`<div style="width:84px"><img src="${esc(u)}" style="width:84px;height:104px;object-fit:cover;display:block"><div style="display:flex;justify-content:space-between;margin-top:4px">${i==0?'<small style="color:var(--ac)">Cover</small>':`<button class="lk" data-cv="${i}">Cover</button>`}<button class="lk" data-rm="${i}">Remove</button></div></div>`).join(''):'<span style="color:var(--mu)">No photos yet.</span>'}
+$('#gal').onclick=e=>{const t=e.target;if(t.dataset.rm!=null){removed.push(...gal.splice(+t.dataset.rm,1));drawGal()}if(t.dataset.cv!=null){gal.unshift(...gal.splice(+t.dataset.cv,1));drawGal()}};
 function show(ok){$('#login').hidden=ok;$('#panel').hidden=!ok;if(ok)tab('p')}
 function tab(t){$$('.tabs .chip').forEach(b=>b.classList.toggle('on',b.dataset.t==t));['p','e','a'].forEach(x=>$('#t'+x).hidden=x!=t);if(t=='p')loadList();if(t=='a')stats()}
 $$('.tabs .chip').forEach(b=>b.onclick=()=>{if(b.dataset.t=='e'&&!editing)form({});tab(b.dataset.t)});
@@ -102,21 +106,24 @@ $('#tp').onclick=async e=>{const t=e.target;
  if(t.dataset.ed){editing=t.dataset.ed;form(list.find(p=>p.id==editing));tab('e')}
  if(t.dataset.dl&&confirm('Delete this product?')){const p=list.find(x=>x.id==t.dataset.dl);
   const {error}=await sb.from('products').delete().eq('id',p.id);if(error){alert(error.message);return}
-  rmImg(p.image_url);loadList()}};
-function form(p){$('#fn').value=p.name||'';$('#fc').value=p.category||'Tees';$('#fp').value=p.price||'';$('#fs').value=p.sizes||'S,M,L,XL';$('#fg').value=p.size_guide||'';$('#fx').checked=p.featured!==false;$('#ff').value='';img=p.image_url||'';$('#fm').textContent=''}
+  imgsOf(p).forEach(rmImg);loadList()}};
+function form(p){$('#fn').value=p.name||'';$('#fc').value=p.category||'Tees';$('#fp').value=p.price||'';$('#fs').value=p.sizes||'S,M,L,XL';$('#fg').value=p.size_guide||'';$('#fx').checked=p.featured!==false;$('#ff').value='';gal=imgsOf(p).slice();removed=[];drawGal();$('#fm').textContent=''}
 function rmImg(u){if(u&&u.includes('/products/'))sb.storage.from('products').remove([u.split('/products/').pop()])}
 function shrink(f,w){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,w/i.width),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(r,'image/webp',.82)};i.src=URL.createObjectURL(f)})}
-$('#fsv').onclick=async()=>{const m=$('#fm');
+$('#fsv').onclick=async()=>{const m=$('#fm'),b=$('#fsv');
  if(!$('#fn').value||!$('#fp').value){m.textContent='Add a name and price.';return}
- m.textContent='Saving...';
- try{let url=img;const f=$('#ff').files[0];
-  if(f){const blob=await shrink(f,900),path=Date.now()+'.webp';
+ b.disabled=true;m.textContent='Saving...';
+ try{const urls=gal.slice(),fs=[...$('#ff').files];
+  for(let i=0;i<fs.length;i++){m.textContent='Uploading photo '+(i+1)+' of '+fs.length+'...';
+   const blob=await shrink(fs[i],900),path=Date.now()+'-'+i+'.webp';
    const up=await sb.storage.from('products').upload(path,blob,{contentType:'image/webp'});if(up.error)throw up.error;
-   url=sb.storage.from('products').getPublicUrl(path).data.publicUrl;if(img)rmImg(img)}
-  const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',size_guide:$('#fg').value,image_url:url||null,featured:$('#fx').checked};
+   urls.push(sb.storage.from('products').getPublicUrl(path).data.publicUrl)}
+  const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',size_guide:$('#fg').value,images:urls,image_url:urls[0]||null,featured:$('#fx').checked};
   const r=editing?await sb.from('products').update(row).eq('id',editing):await sb.from('products').insert(row);
-  if(r.error)throw r.error;editing=null;tab('p')}
- catch(e){m.textContent='Error: '+(e.message||e)}};
+  if(r.error)throw r.error;
+  removed.forEach(rmImg);removed=[];editing=null;tab('p')}
+ catch(e){m.textContent='Error: '+(e.message||e)}
+ b.disabled=false};
 async function stats(){
  const q=()=>sb.from('visits').select('*',{count:'exact',head:true}),c=x=>x.then(r=>r.count||0);
  const day=new Date();day.setHours(0,0,0,0);const wk=new Date(Date.now()-7*864e5);
