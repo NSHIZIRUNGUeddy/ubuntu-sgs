@@ -14,7 +14,7 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;a
 .brand img{height:34px;width:auto;display:none}
 nav{display:flex;gap:18px;font-size:.85rem;color:var(--mu)}
 nav a:hover{color:var(--tx)}
-@media(max-width:640px){nav{gap:14px}nav a:nth-child(3){display:none}}
+@media(max-width:640px){}
 .hero{min-height:calc(100vh - 62px);display:flex;flex-direction:column;justify-content:center;padding:60px 5%;background:rgba(0,0,0,.38)}
 .hero small{letter-spacing:.3em;color:var(--mu);text-transform:uppercase}
 .hero h1{font-size:clamp(2.6rem,10vw,6.5rem);line-height:.95;margin:.3em 0;text-transform:uppercase;letter-spacing:-.02em}
@@ -61,21 +61,62 @@ label{font-size:.8rem;color:var(--mu)}
 .sv>div{min-width:100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center}.sv img{width:100%;height:100%;object-fit:cover}
 .ar{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.65);color:#fff;border:0;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:1.4rem;line-height:1}.ar.l{left:8px}.ar.r{right:8px}
 .dots{display:flex;justify-content:center;gap:7px;padding:10px 0}.dots i{width:8px;height:8px;border-radius:50%;background:#666}.dots i.on{background:#fff}
-.ct .btn{display:inline-flex;align-items:center;gap:9px}.ct svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}</style>
+.ct .btn{display:inline-flex;align-items:center;gap:9px}.ct svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+body{font-family:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif}
+h2,.hero h1,.btn,.chip,.cb b,.hero small{text-transform:uppercase}
+nav{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase}
+.brand{font-weight:800;white-space:nowrap}@media(max-width:640px){.brand{font-size:.8rem;letter-spacing:.08em}.brand img{height:28px}header{padding:10px 4%}}
+.hero{min-height:44vh}
+#shop{padding:26px 0 56px}
+.chips{padding:0 4%;margin-bottom:16px;gap:2px}
+.chip{border:0;border-radius:0;background:none;font-size:.75rem;letter-spacing:.12em;padding:4px 10px;color:var(--mu)}
+.chip.on{background:none;color:var(--tx);text-decoration:underline;text-underline-offset:6px}
+.grid{grid-template-columns:repeat(2,1fr);gap:2px}
+@media(min-width:760px){.grid{grid-template-columns:repeat(4,1fr)}}
+.card{background:none;border:0;cursor:pointer}
+.ph{aspect-ratio:3/4;background:#1c1c18}
+.ph img.b{position:absolute;inset:0;opacity:0;transition:opacity .3s}
+.card:hover .ph img.b{opacity:1}
+.cb{padding:10px 8px 20px;gap:2px}
+.cb b{font-size:.78rem;font-weight:600;letter-spacing:.04em}
+.pr{font-size:.78rem;color:var(--mu)}
+
+body{font-family:"Courier Prime","Courier New",Courier,monospace;letter-spacing:.02em}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:8px 4%}
+header .brand span{position:absolute;left:-9999px}
+header .brand img{height:46px;width:auto}
+.hb{background:none;border:0;color:var(--tx);cursor:pointer;padding:4px;justify-self:start;display:flex}
+.mn{position:fixed;inset:0;z-index:30;background:#0a0a08;display:none;flex-direction:column;overflow:auto;padding:8px 4% 40px}
+.mn.show{display:flex}
+.mt{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.mt img{height:46px}
+.ml{display:flex;flex-direction:column;gap:6px;margin-top:40px;font-size:1.15rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx)}
+.ml a{padding:9px 4px;display:block}
+#mcats a{font-size:.95rem;color:var(--mu);padding-left:22px}
+.ph img[src*="-cut."]{object-fit:contain;padding:8%;filter:drop-shadow(0 0 14px rgba(255,255,255,.12))}
+.sv img[src*="-cut."]{object-fit:contain;padding:6%}
+.cbd{position:absolute;top:-2px;right:-6px;background:var(--tx);color:#000;font-size:.62rem;font-weight:700;min-width:17px;height:17px;border-radius:99px;display:none;align-items:center;justify-content:center;padding:0 4px}
+.cdw{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:none;justify-content:flex-end}.cdw.show{display:flex}
+.cp{background:#0a0a08;width:min(420px,100%);height:100%;overflow:auto;padding:16px}
+.qt button{background:none;border:1px solid var(--line);color:var(--tx);width:26px;height:26px;cursor:pointer;font-family:inherit}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <header>
- <a href="#top" class="brand"><img id="logo" alt="Ubuntu SGs logo"><span>Ubuntu SGs</span></a>
- <nav><a href="#shop">Shop</a><a href="#reviews">Reviews</a><a href="#faq">FAQ</a><a href="#contact">Contact</a></nav>
+ <button class="hb" id="mb" aria-label="Open menu"><svg viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M3 7h22M3 14h22M3 21h22"/></svg></button>
+ <a href="#top" class="brand" aria-label="Ubuntu SGs home"><img id="logo" alt="Ubuntu SGs logo"><span>Ubuntu SGs</span></a>
+ <button class="hb" id="cartBtn" aria-label="Open cart" style="justify-self:end;position:relative"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="cbd" id="cc">0</span></button>
 </header>
+<div class="cdw" id="cart"><div class="cp"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="letter-spacing:.12em">CART</b><button class="hb" id="cx" aria-label="Close cart"><svg viewBox="0 0 28 28" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 5l18 18M23 5L5 23"/></svg></button></div><div id="ci"></div><div id="cf"></div></div></div>
+<div class="mn" id="menu">
+ <div class="mt"><button class="hb" id="mx" aria-label="Close menu"><svg viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 5l18 18M23 5L5 23"/></svg></button><img id="logo2" alt="Ubuntu SGs logo"><span></span></div>
+ <nav class="ml"><a href="#shop" data-mc="All">Shop</a><div id="mcats"></div><a href="#faq">FAQ</a><a href="#contact">Contact</a></nav>
+</div>
 <main id="top">
-<div class="hero"><img id="hl" alt="Ubuntu SGs logo" style="display:none;width:min(400px,72vw);margin:0 0 22px -4px"><small>Kigali, Rwanda</small><h1>Ubuntu<br>SGs</h1><p>Streetwear made in Rwanda. Tees, hoodies, shorts and more, built for the street.</p><p><a class="btn" href="#shop">Shop the collection</a></p></div>
-<section id="shop"><h2>Featured collection</h2><div class="chips" id="chips"></div><div class="grid" id="grid"></div></section>
-<section id="reviews"><h2>What people say</h2><div class="tg">
-<div class="q"><p>Heavy fabric, perfect fit. The hoodie is my everyday piece now.</p><span>Customer, Kigali</span></div>
-<div class="q"><p>Clean designs and fast replies on WhatsApp. Proud to wear Rwandan streetwear.</p><span>Customer, Kigali</span></div>
-<div class="q"><p>The tee quality is serious for the price. Ordering again.</p><span>Customer, Rwanda</span></div></div></section>
+<div class="hero"><small>Kigali, Rwanda</small><h1>Ubuntu<br>SGs</h1><p>Streetwear made in Rwanda. Tees, hoodies, shorts and more, built for the street.</p><p><a class="btn" href="#shop">Shop the collection</a></p></div>
+<section id="shop"><div class="chips" id="chips"></div><div class="grid" id="grid"></div></section>
 <section id="faq" style="background:rgba(0,0,0,.72)"><h2>FAQ</h2>
 <details><summary>How do I order?</summary><p>Pick your size, tap Order on WhatsApp, and send the pre-filled message. We confirm availability, price and delivery with you.</p></details>
 <details><summary>Do you deliver?</summary><p>Yes, we deliver in Kigali and can arrange delivery elsewhere in Rwanda. Ask us on WhatsApp for rates.</p></details>
@@ -102,14 +143,13 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const sb=(window.supabase&&SB_URL.startsWith('http'))?supabase.createClient(SB_URL,SB_KEY):null;
 let P=[],cat='All';
 const imgs=p=>Array.isArray(p.images)&&p.images.length?p.images:(p.image_url?[p.image_url]:[]);
-$('#logo').src=LOGO;$('#logo').style.display='block';$('#hl').src=LOGO;$('#hl').style.display='block';$('.hero h1').style.display='none';
+$('#logo').src=LOGO;$('#logo').style.display='block';$('#logo2').src=LOGO;$('.hero h1').style.display='none';
 function render(){
  const cats=['All',...new Set(P.map(p=>p.category))];
+ $('#mcats').innerHTML=cats.slice(1).map(c=>`<a href="#shop" data-mc="${esc(c)}">${esc(c)}</a>`).join('');
  $('#chips').innerHTML=cats.length>2?cats.map(c=>`<button class="chip ${c==cat?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join(''):'';
  const ps=P.filter(p=>cat=='All'||p.category==cat);
- $('#grid').innerHTML=ps.length?ps.map(p=>`<div class="card"><div class="ph" data-v="${p.id}">${imgs(p)[0]?`<img src="${esc(imgs(p)[0])}" alt="${esc(p.name)}" loading="lazy">`:'UBUNTU SGs'}${imgs(p).length>1?`<span class="bdg">${imgs(p).length} photos</span>`:''}</div><div class="cb"><b data-v="${p.id}">${esc(p.name)}</b><span class="pr">${fmt(p.price)}</span>
- <select id="sz-${p.id}">${String(p.sizes||'M').split(',').map(s=>`<option>${esc(s.trim())}</option>`).join('')}</select>
-  <button class="btn s" data-o="${p.id}">Order on WhatsApp</button></div></div>`).join(''):'<p style="color:var(--mu)">New drops coming soon.</p>';
+ $('#grid').innerHTML=ps.length?ps.map(p=>{const im=imgs(p);return `<div class="card" data-v="${p.id}"><div class="ph">${im[0]?`<img src="${esc(im[0])}" alt="${esc(p.name)}" loading="lazy">${im[1]?`<img class="b" src="${esc(im[1])}" alt="" loading="lazy">`:''}`:'UBUNTU SGs'}</div><div class="cb"><b>${esc(p.name)}</b><span class="pr">${fmt(p.price)}</span></div></div>`}).join(''):'<p style="color:var(--mu)">New drops coming soon.</p>';
 }
 async function load(){
  if(!sb){$('#grid').innerHTML='<p style="color:var(--mu)">New drops coming soon.</p>';return}
@@ -121,17 +161,34 @@ function openP(id){const p=P.find(x=>x.id==id);if(!p)return;const im=imgs(p),man
  $('#pvb').innerHTML=`<div class="sl"><div class="sv" id="sv">${im.length?im.map(u=>`<div><img src="${esc(u)}" alt="${esc(p.name)}"></div>`).join(''):'<div style="color:#5c5a48;font-weight:700">UBUNTU SGs</div>'}</div>${many?'<button class="ar l" data-a="-1">&#8249;</button><button class="ar r" data-a="1">&#8250;</button>':''}</div>${many?`<div class="dots" id="dots">${im.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}
  <h2 style="margin:14px 0 4px">${esc(p.name)}</h2><div class="pr" style="margin-bottom:12px">${fmt(p.price)}</div>
  <label>Size</label><select id="pz">${String(p.sizes||'M').split(',').map(x=>`<option>${esc(x.trim())}</option>`).join('')}</select>
- <p><button class="btn" data-po="${p.id}">Order on WhatsApp</button> <button class="btn o" onclick="this.closest('.ov').classList.remove('show')">Close</button></p>`;
+ <p><button class="btn" data-ca="${p.id}">Add to cart</button> <button class="btn o" data-po="${p.id}">Order on WhatsApp</button> <button class="btn o" onclick="this.closest('.ov').classList.remove('show')">Close</button></p>`;
  $('#pv').classList.add('show');
  const sv=$('#sv');sv.onscroll=()=>{const i=Math.round(sv.scrollLeft/sv.clientWidth);$$('#dots i').forEach((d,k)=>d.classList.toggle('on',k==i))}}
 $$('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target==o)o.classList.remove('show')}));
+let cart=[];try{cart=JSON.parse(localStorage.getItem('ugs_cart')||'[]')}catch(e){}
+function saveCart(){try{localStorage.setItem('ugs_cart',JSON.stringify(cart))}catch(e){}drawCart()}
+function drawCart(){const n=cart.reduce((a,c)=>a+c.q,0),tot=cart.reduce((a,c)=>a+c.q*c.price,0);
+ $('#cc').textContent=n;$('#cc').style.display=n?'flex':'none';
+ $('#ci').innerHTML=cart.length?cart.map(c=>`<div class="li"><div style="display:flex;gap:10px;align-items:center">${c.img?`<img src="${esc(c.img)}" alt="">`:'<img>'}<div><b>${esc(c.name)}</b><br><span style="color:var(--mu)">Size ${esc(c.size)} · ${fmt(c.price)}</span><br><span class="qt"><button data-cq="${esc(c.k)}" data-cd="-1">-</button> ${c.q} <button data-cq="${esc(c.k)}" data-cd="1">+</button></span></div></div><button class="lk" data-cr="${esc(c.k)}">Remove</button></div>`).join(''):'<p style="color:var(--mu)">Your cart is empty.</p>';
+ $('#cf').innerHTML=cart.length?`<p style="display:flex;justify-content:space-between;margin:16px 0"><b>TOTAL</b><b>${fmt(tot)}</b></p><button class="btn" style="width:100%" id="co">Order on WhatsApp</button>`:''}
+function openCart(){drawCart();$('#cart').classList.add('show')}
+$('#cartBtn').onclick=openCart;$('#cx').onclick=()=>$('#cart').classList.remove('show');
+$('#cart').addEventListener('click',e=>{if(e.target.id=='cart')$('#cart').classList.remove('show')});
+drawCart();
 document.addEventListener('click',e=>{const t=e.target;
+ if(t.dataset.ca){const p=P.find(x=>x.id==t.dataset.ca),sz=$('#pz').value,k=p.id+'|'+sz,f=cart.find(c=>c.k==k);if(f)f.q++;else cart.push({k,id:p.id,name:p.name,price:p.price,size:sz,q:1,img:imgs(p)[0]||''});saveCart();$('#pv').classList.remove('show');openCart();return}
+ if(t.dataset.cq){const c=cart.find(x=>x.k==t.dataset.cq);if(c){c.q+=+t.dataset.cd;if(c.q<1)cart=cart.filter(x=>x!==c)}saveCart();return}
+ if(t.dataset.cr){cart=cart.filter(x=>x.k!=t.dataset.cr);saveCart();return}
+ if(t.id=='co'){const tot=cart.reduce((a,c)=>a+c.q*c.price,0);open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hi Ubuntu SGs, I want to order:\n'+cart.map((c,i)=>`${i+1}. ${c.name}, size ${c.size} x${c.q} - ${fmt(c.price*c.q)}`).join('\n')+'\nTotal: '+fmt(tot)),'_blank');return}
  if(t.dataset.a){const sv=$('#sv');sv.scrollBy({left:sv.clientWidth*t.dataset.a,behavior:'smooth'});return}
  if(t.dataset.po){const p=P.find(x=>x.id==t.dataset.po);open('https://wa.me/'+WA+'?text='+encodeURIComponent(`Hi Ubuntu SGs, I want to order: ${p.name}, size ${$('#pz').value}, ${fmt(p.price)}.`),'_blank');return}
  const v=t.closest&&t.closest('[data-v]');if(v){openP(v.dataset.v);return}
  if(t.dataset.c){cat=t.dataset.c;render()}
  if(t.dataset.o){const p=P.find(x=>x.id==t.dataset.o),s=$('#sz-'+p.id).value;
   open('https://wa.me/'+WA+'?text='+encodeURIComponent(`Hi Ubuntu SGs, I want to order: ${p.name}, size ${s}, ${fmt(p.price)}.`),'_blank')}});
+$('#mb').onclick=()=>$('#menu').classList.add('show');
+$('#mx').onclick=()=>$('#menu').classList.remove('show');
+$('#menu').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;if(a.dataset.mc!=null){cat=a.dataset.mc;render()}$('#menu').classList.remove('show')});
 $('#grid').innerHTML='<p style="color:var(--mu)">Loading...</p>';
 load();
 try{if(sb&&!sessionStorage.getItem('v')){sessionStorage.setItem('v',1);sb.from('visits').insert({}).then(()=>{})}}catch(e){}

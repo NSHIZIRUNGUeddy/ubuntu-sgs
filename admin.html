@@ -54,8 +54,9 @@ footer{background:rgba(10,10,7,.95);padding:30px 5%;border-top:1px solid var(--l
 pre{white-space:pre-wrap;font-family:inherit;color:var(--ac)}
 label{font-size:.8rem;color:var(--mu)}
 
-.box{margin:0 auto 20px}</style>
+.box{margin:0 auto 20px}body{font-family:"Courier Prime","Courier New",Courier,monospace}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 </head><body>
 <main style="max-width:760px;margin:0 auto;padding:30px 4%">
 <div class="box" id="login"><h2>Admin login</h2>
@@ -70,6 +71,7 @@ label{font-size:.8rem;color:var(--mu)}
 <div class="row"><div><label>Name</label><input id="fn"></div><div><label>Category</label><select id="fc"><option>Tees</option><option>Shorts</option><option>Hoodies</option><option>Juggles</option><option>Undershirts</option></select></div></div>
 <div class="row"><div><label>Price (RWF)</label><input id="fp" type="number"></div><div><label>Sizes (comma separated)</label><input id="fs" value="S,M,L,XL"></div></div>
 <div class="row" style="margin-top:10px"><div><label>Add photos (select one or more)</label><input id="ff" type="file" accept="image/*" multiple></div><div><label><input id="fx" type="checkbox" checked style="width:auto"> Show in collection</label></div></div>
+<p style="margin:12px 0 0"><label style="font-size:.85rem;color:var(--tx)"><input id="fb" type="checkbox" checked style="width:auto"> Remove the photo background automatically (the first time can take a minute)</label></p>
 <p style="color:var(--mu);font-size:.8rem;margin:10px 0 0">Saved photos (the first one is the cover):</p><div id="gal" style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px"></div>
 <button class="btn" id="fsv">Save product</button> <span id="fm" style="color:var(--mu)"></span></div>
 <div id="ta" hidden></div>
@@ -109,18 +111,39 @@ $('#tp').onclick=async e=>{const t=e.target;
 function form(p){$('#fn').value=p.name||'';$('#fc').value=p.category||'Tees';$('#fp').value=p.price||'';$('#fs').value=p.sizes||'S,M,L,XL';$('#fx').checked=p.featured!==false;$('#ff').value='';gal=imgsOf(p).slice();removed=[];drawGal();$('#fm').textContent=''}
 function rmImg(u){if(u&&u.includes('/products/'))sb.storage.from('products').remove([u.split('/products/').pop()])}
 function shrink(f,w){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,w/i.width),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(r,'image/webp',.82)};i.src=URL.createObjectURL(f)})}
+let rb=null;
+async function loadRB(){if(!rb){const m=await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.6.0/+esm');rb=m.removeBackground||m.default}return rb}
+function loadImg(b){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=URL.createObjectURL(b)})}
+async function trim(blob){
+ const i=await loadImg(blob),c=document.createElement('canvas');c.width=i.width;c.height=i.height;
+ const x=c.getContext('2d');x.drawImage(i,0,0);const d=x.getImageData(0,0,c.width,c.height).data;
+ let x0=c.width,y0=c.height,x1=-1,y1=-1;
+ for(let y=0;y<c.height;y++)for(let u=0;u<c.width;u++)if(d[(y*c.width+u)*4+3]>20){if(u<x0)x0=u;if(u>x1)x1=u;if(y<y0)y0=y;if(y>y1)y1=y}
+ if(x1<=x0||y1<=y0)throw new Error('No product found in photo');
+ const w=x1-x0+1,h=y1-y0+1,p=Math.round(Math.max(w,h)*.06),k=Math.min(1,900/(Math.max(w,h)+2*p));
+ const o=document.createElement('canvas');o.width=Math.round((w+2*p)*k);o.height=Math.round((h+2*p)*k);
+ o.getContext('2d').drawImage(c,x0,y0,w,h,p*k,p*k,w*k,h*k);
+ return new Promise(r=>o.toBlob(r,'image/webp',.9))}
+async function cutout(file,note){
+ const fn=await loadRB(),small=await new Promise(async r=>{const i=await loadImg(file),k=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(r,'image/png')});
+ const out=await fn(small,{output:{format:'image/png'},progress:(key,cur,tot)=>{if(tot)note(Math.round(cur/tot*100))}});
+ return trim(out)}
 $('#fsv').onclick=async()=>{const m=$('#fm'),b=$('#fsv');
  if(!$('#fn').value||!$('#fp').value){m.textContent='Add a name and price.';return}
  b.disabled=true;m.textContent='Saving...';
+ let bgFail=false;
  try{const urls=gal.slice(),fs=[...$('#ff').files];
   for(let i=0;i<fs.length;i++){m.textContent='Uploading photo '+(i+1)+' of '+fs.length+'...';
-   const blob=await shrink(fs[i],900),path=Date.now()+'-'+i+'.webp';
-   const up=await sb.storage.from('products').upload(path,blob,{contentType:'image/webp'});if(up.error)throw up.error;
+   let blob=null,tag='';
+   if($('#fb').checked){try{blob=await cutout(fs[i],pc=>{m.textContent='Removing background, photo '+(i+1)+' of '+fs.length+' ('+pc+'%)...'});tag='-cut'}catch(e){console.warn(e);bgFail=true;blob=null}}
+   if(!blob)blob=await shrink(fs[i],900);
+   const path=Date.now()+'-'+i+tag+'.'+(blob.type=='image/png'?'png':'webp');
+   const up=await sb.storage.from('products').upload(path,blob,{contentType:blob.type||'image/webp'});if(up.error)throw up.error;
    urls.push(sb.storage.from('products').getPublicUrl(path).data.publicUrl)}
   const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',images:urls,image_url:urls[0]||null,featured:$('#fx').checked};
   const r=editing?await sb.from('products').update(row).eq('id',editing):await sb.from('products').insert(row);
   if(r.error)throw r.error;
-  removed.forEach(rmImg);removed=[];editing=null;tab('p')}
+  removed.forEach(rmImg);removed=[];editing=null;tab('p');if(bgFail)alert('Saved. The background could not be removed from some photos, so they were uploaded as they are.')}
  catch(e){m.textContent='Error: '+(e.message||e)}
  b.disabled=false};
 async function stats(){
