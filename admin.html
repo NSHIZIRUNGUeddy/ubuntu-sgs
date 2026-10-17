@@ -54,7 +54,7 @@ footer{background:rgba(10,10,7,.95);padding:30px 5%;border-top:1px solid var(--l
 pre{white-space:pre-wrap;font-family:inherit;color:var(--ac)}
 label{font-size:.8rem;color:var(--mu)}
 
-.box{margin:0 auto 20px}body{font-family:"Courier Prime","Courier New",Courier,monospace}</style>
+.box{margin:0 auto 20px}body{font-family:"Courier Prime","Courier New",Courier,monospace}.pp{display:flex;gap:12px;align-items:flex-start;margin:10px 0;padding:10px;border:1px solid var(--line)}.pc{background:#050504;max-width:150px;height:auto;display:block}.pp .chip{padding:5px 10px;font-size:.72rem}.pn{display:block;color:var(--mu);font-size:.75rem;margin-top:6px}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 </head><body>
@@ -71,7 +71,7 @@ label{font-size:.8rem;color:var(--mu)}
 <div class="row"><div><label>Name</label><input id="fn"></div><div><label>Category</label><select id="fc"><option>Tees</option><option>Shorts</option><option>Hoodies</option><option>Juggles</option><option>Undershirts</option></select></div></div>
 <div class="row"><div><label>Price (RWF)</label><input id="fp" type="number"></div><div><label>Sizes (comma separated)</label><input id="fs" value="S,M,L,XL"></div></div>
 <div class="row" style="margin-top:10px"><div><label>Add photos (select one or more)</label><input id="ff" type="file" accept="image/*" multiple></div><div><label><input id="fx" type="checkbox" checked style="width:auto"> Show in collection</label></div></div>
-<p style="margin:12px 0 0"><label style="font-size:.85rem;color:var(--tx)"><input id="fb" type="checkbox" checked style="width:auto"> Remove the photo background automatically (the first time can take a minute)</label></p>
+<div id="pp"></div>
 <p style="color:var(--mu);font-size:.8rem;margin:10px 0 0">Saved photos (the first one is the cover):</p><div id="gal" style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px"></div>
 <button class="btn" id="fsv">Save product</button> <span id="fm" style="color:var(--mu)"></span></div>
 <div id="ta" hidden></div>
@@ -108,42 +108,87 @@ $('#tp').onclick=async e=>{const t=e.target;
  if(t.dataset.dl&&confirm('Delete this product?')){const p=list.find(x=>x.id==t.dataset.dl);
   const {error}=await sb.from('products').delete().eq('id',p.id);if(error){alert(error.message);return}
   imgsOf(p).forEach(rmImg);loadList()}};
-function form(p){$('#fn').value=p.name||'';$('#fc').value=p.category||'Tees';$('#fp').value=p.price||'';$('#fs').value=p.sizes||'S,M,L,XL';$('#fx').checked=p.featured!==false;$('#ff').value='';gal=imgsOf(p).slice();removed=[];drawGal();$('#fm').textContent=''}
+function form(p){$('#fn').value=p.name||'';$('#fc').value=p.category||'Tees';$('#fp').value=p.price||'';$('#fs').value=p.sizes||'S,M,L,XL';$('#fx').checked=p.featured!==false;$('#ff').value='';PP=[];$('#pp').innerHTML='';gal=imgsOf(p).slice();removed=[];drawGal();$('#fm').textContent=''}
 function rmImg(u){if(u&&u.includes('/products/'))sb.storage.from('products').remove([u.split('/products/').pop()])}
 function shrink(f,w){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,w/i.width),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(r,'image/webp',.82)};i.src=URL.createObjectURL(f)})}
-let rb=null;
+let PP=[],rb=null;
 async function loadRB(){if(!rb){const m=await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.6.0/+esm');rb=m.removeBackground||m.default}return rb}
 function loadImg(b){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=URL.createObjectURL(b)})}
-async function trim(blob){
- const i=await loadImg(blob),c=document.createElement('canvas');c.width=i.width;c.height=i.height;
- const x=c.getContext('2d');x.drawImage(i,0,0);const d=x.getImageData(0,0,c.width,c.height).data;
- let x0=c.width,y0=c.height,x1=-1,y1=-1;
- for(let y=0;y<c.height;y++)for(let u=0;u<c.width;u++)if(d[(y*c.width+u)*4+3]>20){if(u<x0)x0=u;if(u>x1)x1=u;if(y<y0)y0=y;if(y>y1)y1=y}
- if(x1<=x0||y1<=y0)throw new Error('No product found in photo');
- const w=x1-x0+1,h=y1-y0+1,p=Math.round(Math.max(w,h)*.06),k=Math.min(1,900/(Math.max(w,h)+2*p));
- const o=document.createElement('canvas');o.width=Math.round((w+2*p)*k);o.height=Math.round((h+2*p)*k);
- o.getContext('2d').drawImage(c,x0,y0,w,h,p*k,p*k,w*k,h*k);
- return new Promise(r=>o.toBlob(r,'image/webp',.9))}
-async function cutout(file,note){
- const fn=await loadRB(),small=await new Promise(async r=>{const i=await loadImg(file),k=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(r,'image/png')});
- const out=await fn(small,{output:{format:'image/png'},progress:(key,cur,tot)=>{if(tot)note(Math.round(cur/tot*100))}});
- return trim(out)}
+function finish(src,al){
+ const w=src.width,h=src.height,N=w*h,e=new Uint8Array(N);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!al[i])continue;
+  e[i]=((x>0&&!al[i-1])||(x<w-1&&!al[i+1])||(y>0&&!al[i-w])||(y<h-1&&!al[i+w]))?0:1}
+ const lab=new Int32Array(N),sizes=[0],st=new Int32Array(N);let L=0;
+ for(let s0=0;s0<N;s0++){if(!e[s0]||lab[s0])continue;L++;let sp=0,c=0;st[sp++]=s0;lab[s0]=L;
+  while(sp){const i=st[--sp];c++;const x=i%w,y=(i/w)|0;
+   if(x>0&&e[i-1]&&!lab[i-1]){lab[i-1]=L;st[sp++]=i-1}if(x<w-1&&e[i+1]&&!lab[i+1]){lab[i+1]=L;st[sp++]=i+1}
+   if(y>0&&e[i-w]&&!lab[i-w]){lab[i-w]=L;st[sp++]=i-w}if(y<h-1&&e[i+w]&&!lab[i+w]){lab[i+w]=L;st[sp++]=i+w}}
+  sizes.push(c)}
+ let mx=0;for(const v of sizes)if(v>mx)mx=v;const minS=Math.max(mx*.12,N*.004);
+ const a=new Float32Array(N);for(let i=0;i<N;i++)a[i]=(e[i]&&sizes[lab[i]]>=minS)?255:0;
+ const out=document.createElement('canvas');out.width=w;out.height=h;const ox=out.getContext('2d'),id=src.getContext('2d').getImageData(0,0,w,h),d=id.data;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){let s=0,c=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=w||yy>=h){s+=a[y*w+x];c++}else{s+=a[yy*w+xx];c++}}
+  d[(y*w+x)*4+3]=s/c}
+ ox.putImageData(id,0,0);return out}
+function autoCut(src,tol){
+ const w=src.width,h=src.height,N=w*h,d=src.getContext('2d').getImageData(0,0,w,h).data,rs=[],gs=[],bs=[],ring=3;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(x<ring||y<ring||x>=w-ring||y>=h-ring){const p=(y*w+x)*4;rs.push(d[p]);gs.push(d[p+1]);bs.push(d[p+2])}
+ const med=v=>{const c=v.slice().sort((p,q)=>p-q);return c[c.length>>1]},R=med(rs),G=med(gs),B=med(bs);
+ const dist=p=>{const a=d[p]-R,b=d[p+1]-G,c=d[p+2]-B;return Math.sqrt(a*a+b*b+c*c)};
+ let near=0;for(let k=0;k<rs.length;k++){const a=rs[k]-R,b=gs[k]-G,c=bs[k]-B;if(Math.sqrt(a*a+b*b+c*c)<45)near++}
+ const bg=new Uint8Array(N),q=new Int32Array(N);let qh=0,qt=0;
+ const add=i=>{if(!bg[i]&&dist(i*4)<tol){bg[i]=1;q[qt++]=i}};
+ for(let x=0;x<w;x++){add(x);add((h-1)*w+x)}for(let y=0;y<h;y++){add(y*w);add(y*w+w-1)}
+ while(qh<qt){const i=q[qh++],x=i%w,y=(i/w)|0;if(x>0)add(i-1);if(x<w-1)add(i+1);if(y>0)add(i-w);if(y<h-1)add(i+w)}
+ const al=new Uint8Array(N);for(let i=0;i<N;i++)al[i]=bg[i]?0:255;
+ return {canvas:finish(src,al),plain:near/rs.length>.9}}
+async function aiCut(s,note){
+ const fn=await loadRB(),blob=await new Promise(r=>s.work.toBlob(r,'image/png'));
+ const out=await fn(blob,{output:{format:'image/png'},progress:(k,c,t)=>{if(t)note('Loading the AI: '+Math.round(c/t*100)+'%')}});
+ const oi=await loadImg(out),w=s.work.width,h=s.work.height,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(oi,0,0,w,h);
+ const ad=x.getImageData(0,0,w,h).data,N=w*h,al=new Uint8Array(N);
+ for(let i=0;i<N;i++)al[i]=ad[i*4+3]>128?255:0;
+ const bgc=new Uint8Array(N),q=new Int32Array(N);let qh=0,qt=0;const add=i=>{if(!al[i]&&!bgc[i]){bgc[i]=1;q[qt++]=i}};
+ for(let xx=0;xx<w;xx++){add(xx);add((h-1)*w+xx)}for(let y=0;y<h;y++){add(y*w);add(y*w+w-1)}
+ while(qh<qt){const i=q[qh++],xx=i%w,y=(i/w)|0;if(xx>0)add(i-1);if(xx<w-1)add(i+1);if(y>0)add(i-w);if(y<h-1)add(i+w)}
+ for(let i=0;i<N;i++)if(!al[i]&&!bgc[i])al[i]=255;
+ return finish(s.work,al)}
+function trimCanvas(c){
+ const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+ if(x1<=x0||y1<=y0)return new Promise(r=>c.toBlob(r,'image/webp',.9));
+ const bw=x1-x0+1,bh=y1-y0+1,p=Math.round(Math.max(bw,bh)*.06),k=Math.min(1,900/(Math.max(bw,bh)+2*p)),o=document.createElement('canvas');
+ o.width=Math.round((bw+2*p)*k);o.height=Math.round((bh+2*p)*k);o.getContext('2d').drawImage(c,x0,y0,bw,bh,p*k,p*k,bw*k,bh*k);
+ return new Promise(r=>o.toBlob(r,'image/webp',.92))}
+const blk=s=>$('#pp').children[PP.indexOf(s)];
+function note(s,t){const b=blk(s);if(b)b.querySelector('.pn').textContent=t||''}
+function paint(s){const b=blk(s);if(!b||!s.res)return;const c=b.querySelector('canvas'),k=Math.min(1,150/Math.max(s.res.width,s.res.height));c.width=Math.round(s.res.width*k);c.height=Math.round(s.res.height*k);const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.drawImage(s.res,0,0,c.width,c.height)}
+function recalc(s){if(!s.work)return;if(s.mode=='orig'){s.res=s.work;note(s,'')}else{const r=autoCut(s.work,s.tol);s.res=r.canvas;note(s,r.plain?'':'This background is not plain, so the cut may be rough. Try "Use AI".')}paint(s)}
+async function prepare(s){const i=await loadImg(s.f),k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);s.work=c;recalc(s)}
+$('#ff').onchange=()=>{PP=[...$('#ff').files].map(f=>({f,tol:30,mode:'auto',work:null,res:null,p:null}));
+ $('#pp').innerHTML=PP.map((s,i)=>`<div class="pp"><canvas class="pc" width="150" height="150"></canvas><div><div><button type="button" class="chip" data-pm="orig">Original</button> <button type="button" class="chip on" data-pm="auto">Remove background</button> <button type="button" class="chip" data-pm="ai">Use AI</button></div><label style="display:block;margin-top:8px">Strength <input type="range" min="8" max="90" value="30" data-ps style="width:160px"></label><small class="pn"></small></div></div>`).join('');
+ PP.forEach(s=>{s.p=prepare(s)})};
+$('#pp').addEventListener('click',async e=>{const t=e.target,b=t.closest('.pp');if(!b||!t.dataset.pm)return;const s=PP[[...$('#pp').children].indexOf(b)];
+ const on=m=>b.querySelectorAll('[data-pm]').forEach(x=>x.classList.toggle('on',x.dataset.pm==m));
+ await s.p;s.mode=t.dataset.pm;on(s.mode);
+ if(s.mode=='ai'){note(s,'Loading the AI. The first time can take a minute or two...');
+  s.p=aiCut(s,n=>note(s,n)).then(r=>{s.res=r;paint(s);note(s,'')}).catch(err=>{console.warn(err);s.mode='auto';on('auto');recalc(s);note(s,'The AI could not run. Using Remove background instead.')})}
+ else recalc(s)});
+$('#pp').addEventListener('input',e=>{if(!e.target.hasAttribute('data-ps'))return;const s=PP[[...$('#pp').children].indexOf(e.target.closest('.pp'))];s.tol=+e.target.value;clearTimeout(s.t);s.t=setTimeout(()=>{if(s.mode=='auto')recalc(s)},120)});
 $('#fsv').onclick=async()=>{const m=$('#fm'),b=$('#fsv');
  if(!$('#fn').value||!$('#fp').value){m.textContent='Add a name and price.';return}
  b.disabled=true;m.textContent='Saving...';
- let bgFail=false;
- try{const urls=gal.slice(),fs=[...$('#ff').files];
-  for(let i=0;i<fs.length;i++){m.textContent='Uploading photo '+(i+1)+' of '+fs.length+'...';
-   let blob=null,tag='';
-   if($('#fb').checked){try{blob=await cutout(fs[i],pc=>{m.textContent='Removing background, photo '+(i+1)+' of '+fs.length+' ('+pc+'%)...'});tag='-cut'}catch(e){console.warn(e);bgFail=true;blob=null}}
-   if(!blob)blob=await shrink(fs[i],900);
+ try{const urls=gal.slice();
+  for(let i=0;i<PP.length;i++){const s=PP[i];m.textContent='Uploading photo '+(i+1)+' of '+PP.length+'...';await s.p;
+   let blob,tag='';
+   if(s.mode=='orig'||!s.res){blob=await shrink(s.f,900)}else{blob=await trimCanvas(s.res);tag='-cut'}
    const path=Date.now()+'-'+i+tag+'.'+(blob.type=='image/png'?'png':'webp');
    const up=await sb.storage.from('products').upload(path,blob,{contentType:blob.type||'image/webp'});if(up.error)throw up.error;
    urls.push(sb.storage.from('products').getPublicUrl(path).data.publicUrl)}
   const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',images:urls,image_url:urls[0]||null,featured:$('#fx').checked};
   const r=editing?await sb.from('products').update(row).eq('id',editing):await sb.from('products').insert(row);
   if(r.error)throw r.error;
-  removed.forEach(rmImg);removed=[];editing=null;tab('p');if(bgFail)alert('Saved. The background could not be removed from some photos, so they were uploaded as they are.')}
+  removed.forEach(rmImg);removed=[];editing=null;PP=[];$('#pp').innerHTML='';tab('p')}
  catch(e){m.textContent='Error: '+(e.message||e)}
  b.disabled=false};
 async function stats(){
