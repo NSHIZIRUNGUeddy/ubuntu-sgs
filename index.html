@@ -121,7 +121,6 @@ header .brand img{height:46px;width:auto}
 .ph img,.ph img[src*="-cut."]{width:100%;height:100%;max-height:none;object-fit:contain;padding:2%}
 .ph img.b{height:100%}
 .cb{margin-top:-4px}
-.cb{position:relative;z-index:1}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
@@ -167,27 +166,12 @@ const sb=(window.supabase&&SB_URL.startsWith('http'))?supabase.createClient(SB_U
 let P=[],cat='All';
 const imgs=p=>Array.isArray(p.images)&&p.images.length?p.images:(p.image_url?[p.image_url]:[]);
 $('#logo').src=LOGO;$('#logo').style.display='block';$('#logo2').src=LOGO;$('.hero h1').style.display='none';
-function tight(){
- $$('.card').forEach(card=>{
-  const im=card.querySelector('.ph img:not(.b)'),cb=card.querySelector('.cb'),ph=card.querySelector('.ph');
-  if(!im||!cb||!/-cut\./.test(im.src))return;
-  const probe=new Image();probe.crossOrigin='anonymous';
-  probe.onload=()=>{try{
-   const w=60,h=Math.max(1,Math.round(60*probe.height/probe.width)),c=document.createElement('canvas');c.width=w;c.height=h;
-   const x=c.getContext('2d');x.drawImage(probe,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
-   let last=-1;for(let r=h-1;r>=0&&last<0;r--)for(let q=0;q<w;q++)if(d[(r*w+q)*4+3]>25){last=r;break}
-   if(last<0)return;
-   const fw=ph.clientWidth,fh=ph.clientHeight,p=fw*.02,s=Math.min((fw-2*p)/probe.width,(fh-2*p)/probe.height),dh=probe.height*s,off=p+((fh-2*p)-dh)/2,empty=fh-off-dh*(last+1)/h;
-   cb.style.marginTop=Math.min(0,Math.max(-fh*.6,-(empty-10)))+'px'}catch(e){}};
-  probe.src=im.src})}
-let tt;addEventListener('resize',()=>{clearTimeout(tt);tt=setTimeout(tight,200)});
 function render(){
  const cats=['All',...new Set(P.map(p=>p.category))];
  $('#mcats').innerHTML=cats.slice(1).map(c=>`<a href="#shop" data-mc="${esc(c)}">${esc(c)}</a>`).join('');
  $('#chips').innerHTML=cats.length>2?cats.map(c=>`<button class="chip ${c==cat?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join(''):'';
  const ps=P.filter(p=>cat=='All'||p.category==cat);
  $('#grid').innerHTML=ps.length?ps.map(p=>{const im=imgs(p);return `<div class="card" data-v="${p.id}"><div class="ph">${im[0]?`<img src="${esc(im[0])}" alt="${esc(p.name)}" loading="lazy">${im[1]?`<img class="b" src="${esc(im[1])}" alt="" loading="lazy">`:''}`:'UBUNTU SGs'}</div><div class="cb"><b>${esc(p.name)}</b><span class="pr">${fmt(p.price)}</span></div></div>`}).join(''):'<p style="color:var(--mu)">New drops coming soon.</p>';
- tight();
 }
 async function load(){
  if(!sb){$('#grid').innerHTML='<p style="color:var(--mu)">New drops coming soon.</p>';return}
