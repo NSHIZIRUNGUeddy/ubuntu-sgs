@@ -122,6 +122,9 @@ header .brand img{height:46px;width:auto}
 .ph img.b{height:100%}
 .cb{margin-top:-4px}
 .cb{position:relative;z-index:1}
+.cb{gap:0;padding-bottom:24px}
+.cb b{line-height:1.25}
+.cb .pr{line-height:1.2;margin-top:2px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
@@ -170,7 +173,7 @@ $('#logo').src=LOGO;$('#logo').style.display='block';$('#logo2').src=LOGO;$('.he
 function tight(){
  $$('.card').forEach(card=>{
   const im=card.querySelector('.ph img:not(.b)'),cb=card.querySelector('.cb'),ph=card.querySelector('.ph');
-  if(!im||!cb||!/-cut\./.test(im.src))return;
+  if(!im||!cb)return;
   const probe=new Image();probe.crossOrigin='anonymous';
   probe.onload=()=>{try{
    const w=60,h=Math.max(1,Math.round(60*probe.height/probe.width)),c=document.createElement('canvas');c.width=w;c.height=h;
@@ -178,7 +181,8 @@ function tight(){
    let last=-1;for(let r=h-1;r>=0&&last<0;r--)for(let q=0;q<w;q++)if(d[(r*w+q)*4+3]>25){last=r;break}
    if(last<0)return;
    const fw=ph.clientWidth,fh=ph.clientHeight,p=fw*.02,s=Math.min((fw-2*p)/probe.width,(fh-2*p)/probe.height),dh=probe.height*s,off=p+((fh-2*p)-dh)/2,empty=fh-off-dh*(last+1)/h;
-   cb.style.marginTop=Math.min(0,Math.max(-fh*.6,-(empty-10)))+'px'}catch(e){}};
+   cb.style.marginTop=Math.min(0,Math.max(-fh*.6,-(empty-10)))+'px'}catch(e){cb.style.marginTop=-(ph.clientWidth*.05)+'px'}};
+  probe.onerror=()=>{cb.style.marginTop=-(ph.clientWidth*.05)+'px'};
   probe.src=im.src})}
 let tt;addEventListener('resize',()=>{clearTimeout(tt);tt=setTimeout(tight,200)});
 function render(){
