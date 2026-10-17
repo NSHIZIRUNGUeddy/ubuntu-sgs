@@ -114,10 +114,12 @@ function shrink(f,w){return new Promise(r=>{const i=new Image();i.onload=()=>{co
 let PP=[],rb=null;
 async function loadRB(){if(!rb){const m=await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.6.0/+esm');rb=m.removeBackground||m.default}return rb}
 function loadImg(b){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=URL.createObjectURL(b)})}
-function finish(src,al){
- const w=src.width,h=src.height,N=w*h,e=new Uint8Array(N);
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!al[i])continue;
-  e[i]=((x>0&&!al[i-1])||(x<w-1&&!al[i+1])||(y>0&&!al[i-w])||(y<h-1&&!al[i+w]))?0:1}
+function finish(src,al,er){
+ const w=src.width,h=src.height,N=w*h;let e=new Uint8Array(N);for(let i=0;i<N;i++)e[i]=al[i]?1:0;
+ for(let t=0;t<(er||1);t++){const n=new Uint8Array(N);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!e[i])continue;
+   n[i]=((x>0&&!e[i-1])||(x<w-1&&!e[i+1])||(y>0&&!e[i-w])||(y<h-1&&!e[i+w]))?0:1}
+  e=n}
  const lab=new Int32Array(N),sizes=[0],st=new Int32Array(N);let L=0;
  for(let s0=0;s0<N;s0++){if(!e[s0]||lab[s0])continue;L++;let sp=0,c=0;st[sp++]=s0;lab[s0]=L;
   while(sp){const i=st[--sp];c++;const x=i%w,y=(i/w)|0;
@@ -127,21 +129,33 @@ function finish(src,al){
  let mx=0;for(const v of sizes)if(v>mx)mx=v;const minS=Math.max(mx*.12,N*.004);
  const a=new Float32Array(N);for(let i=0;i<N;i++)a[i]=(e[i]&&sizes[lab[i]]>=minS)?255:0;
  const out=document.createElement('canvas');out.width=w;out.height=h;const ox=out.getContext('2d'),id=src.getContext('2d').getImageData(0,0,w,h),d=id.data;
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){let s=0,c=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=w||yy>=h){s+=a[y*w+x];c++}else{s+=a[yy*w+xx];c++}}
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){let s=0,c=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;s+=(xx<0||yy<0||xx>=w||yy>=h)?a[y*w+x]:a[yy*w+xx];c++}
   d[(y*w+x)*4+3]=s/c}
  ox.putImageData(id,0,0);return out}
+function edgeMap(src){
+ const w=src.width,h=src.height,N=w*h,d=src.getContext('2d').getImageData(0,0,w,h).data,g=new Float32Array(N),b=new Float32Array(N),m=new Float32Array(N);
+ for(let i=0;i<N;i++)g[i]=(d[i*4]+d[i*4+1]+d[i*4+2])/3;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){let s=0,c=0;for(let dy=-1;dy<=1;dy++){const yy=y+dy;if(yy<0||yy>=h)continue;for(let dx=-1;dx<=1;dx++){const xx=x+dx;if(xx<0||xx>=w)continue;s+=g[yy*w+xx];c++}}b[y*w+x]=s/c}
+ for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x,gx=-b[i-w-1]-2*b[i-1]-b[i+w-1]+b[i-w+1]+2*b[i+1]+b[i+w+1],gy=-b[i-w-1]-2*b[i-w]-b[i-w+1]+b[i+w-1]+2*b[i+w]+b[i+w+1];m[i]=Math.sqrt(gx*gx+gy*gy)/4}
+ return m}
 function autoCut(src,tol){
- const w=src.width,h=src.height,N=w*h,d=src.getContext('2d').getImageData(0,0,w,h).data,rs=[],gs=[],bs=[],ring=3;
- for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(x<ring||y<ring||x>=w-ring||y>=h-ring){const p=(y*w+x)*4;rs.push(d[p]);gs.push(d[p+1]);bs.push(d[p+2])}
- const med=v=>{const c=v.slice().sort((p,q)=>p-q);return c[c.length>>1]},R=med(rs),G=med(gs),B=med(bs);
- const dist=p=>{const a=d[p]-R,b=d[p+1]-G,c=d[p+2]-B;return Math.sqrt(a*a+b*b+c*c)};
- let near=0;for(let k=0;k<rs.length;k++){const a=rs[k]-R,b=gs[k]-G,c=bs[k]-B;if(Math.sqrt(a*a+b*b+c*c)<45)near++}
- const bg=new Uint8Array(N),q=new Int32Array(N);let qh=0,qt=0;
- const add=i=>{if(!bg[i]&&dist(i*4)<tol){bg[i]=1;q[qt++]=i}};
- for(let x=0;x<w;x++){add(x);add((h-1)*w+x)}for(let y=0;y<h;y++){add(y*w);add(y*w+w-1)}
- while(qh<qt){const i=q[qh++],x=i%w,y=(i/w)|0;if(x>0)add(i-1);if(x<w-1)add(i+1);if(y>0)add(i-w);if(y<h-1)add(i+w)}
- const al=new Uint8Array(N);for(let i=0;i<N;i++)al[i]=bg[i]?0:255;
- return {canvas:finish(src,al),plain:near/rs.length>.9}}
+ const w=src.width,h=src.height,N=w*h,d=src.getContext('2d').getImageData(0,0,w,h).data;
+ const med=v=>{const c=v.slice().sort((p,q)=>p-q);return c[c.length>>1]};
+ const side=f=>{const r=[],g=[],b=[];for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(f(x,y)){const p=(y*w+x)*4;r.push(d[p]);g.push(d[p+1]);b.push(d[p+2])}return [med(r),med(g),med(b)]};
+ const T=side((x,y)=>y<3),Bm=side((x,y)=>y>=h-3),Lf=side((x,y)=>x<3),Rt=side((x,y)=>x>=w-3);
+ const dist=i=>{const x=i%w,y=(i/w)|0,tx=x/(w-1),ty=y/(h-1),p=i*4;let s=0;for(let c=0;c<3;c++){const ref=.5*((1-ty)*T[c]+ty*Bm[c]+(1-tx)*Lf[c]+tx*Rt[c]),df=d[p+c]-ref;s+=df*df}return Math.sqrt(s)};
+ let near=0,tot=0;for(let x=0;x<w;x++){for(const y of [0,h-1]){tot++;if(dist(y*w+x)<45)near++}}for(let y=1;y<h-1;y++){for(const x of [0,w-1]){tot++;if(dist(y*w+x)<45)near++}}
+ const m=src._em||(src._em=edgeMap(src));
+ const tries=[[tol,3],[tol*.65,2.5],[tol*.4,2],[Math.max(4,tol*.25),1.6]];let al,fg=0,k=0;
+ for(;k<tries.length;k++){const [tl,E]=tries[k];
+  const bar=new Uint8Array(N);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(m[i]>E){bar[i]=1;bar[i-1]=1;bar[i+1]=1;bar[i-w]=1;bar[i+w]=1}}
+  const bg=new Uint8Array(N),q=new Int32Array(N);let qh=0,qt=0;
+  const seed=i=>{if(!bg[i]&&dist(i)<tl){bg[i]=1;q[qt++]=i}},add=i=>{if(!bg[i]&&!bar[i]&&dist(i)<tl){bg[i]=1;q[qt++]=i}};
+  for(let x=0;x<w;x++){seed(x);seed((h-1)*w+x)}for(let y=0;y<h;y++){seed(y*w);seed(y*w+w-1)}
+  while(qh<qt){const i=q[qh++],x=i%w,y=(i/w)|0;if(x>0)add(i-1);if(x<w-1)add(i+1);if(y>0)add(i-w);if(y<h-1)add(i+w)}
+  al=new Uint8Array(N);let c=0;for(let i=0;i<N;i++){if(!bg[i]){al[i]=255;c++}}fg=c/N;
+  if(fg>=.07)break}
+ return {canvas:finish(src,al,2),plain:near/tot>.9,ok:fg>=.07,tuned:k>0}}
 async function aiCut(s,note){
  const fn=await loadRB(),blob=await new Promise(r=>s.work.toBlob(r,'image/png'));
  const out=await fn(blob,{output:{format:'image/png'},progress:(k,c,t)=>{if(t)note('Loading the AI: '+Math.round(c/t*100)+'%')}});
@@ -152,37 +166,41 @@ async function aiCut(s,note){
  for(let xx=0;xx<w;xx++){add(xx);add((h-1)*w+xx)}for(let y=0;y<h;y++){add(y*w);add(y*w+w-1)}
  while(qh<qt){const i=q[qh++],xx=i%w,y=(i/w)|0;if(xx>0)add(i-1);if(xx<w-1)add(i+1);if(y>0)add(i-w);if(y<h-1)add(i+w)}
  for(let i=0;i<N;i++)if(!al[i]&&!bgc[i])al[i]=255;
- return finish(s.work,al)}
-function trimCanvas(c){
- const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
+ return finish(s.work,al,1)}
+function bboxOf(c){const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
- if(x1<=x0||y1<=y0)return new Promise(r=>c.toBlob(r,'image/webp',.9));
- const bw=x1-x0+1,bh=y1-y0+1,p=Math.round(Math.max(bw,bh)*.06),k=Math.min(1,900/(Math.max(bw,bh)+2*p)),o=document.createElement('canvas');
- o.width=Math.round((bw+2*p)*k);o.height=Math.round((bh+2*p)*k);o.getContext('2d').drawImage(c,x0,y0,bw,bh,p*k,p*k,bw*k,bh*k);
- return new Promise(r=>o.toBlob(r,'image/webp',.92))}
+ return x1>x0&&y1>y0?[x0,y0,x1-x0+1,y1-y0+1]:[0,0,w,h]}
+function fitCanvas(c,trim){const [bx,by,bw,bh]=trim?bboxOf(c):[0,0,c.width,c.height],W=900,H=1125,k=Math.min(.88*W/bw,.88*H/bh,2),o=document.createElement('canvas');
+ o.width=W;o.height=H;const x=o.getContext('2d');x.imageSmoothingQuality='high';const dw=bw*k,dh=bh*k;x.drawImage(c,bx,by,bw,bh,(W-dw)/2,(H-dh)/2,dw,dh);return o}
+const fitBlob=(c,trim)=>new Promise(r=>fitCanvas(c,trim).toBlob(r,'image/webp',.92));
 const blk=s=>$('#pp').children[PP.indexOf(s)];
 function note(s,t){const b=blk(s);if(b)b.querySelector('.pn').textContent=t||''}
-function paint(s){const b=blk(s);if(!b||!s.res)return;const c=b.querySelector('canvas'),k=Math.min(1,150/Math.max(s.res.width,s.res.height));c.width=Math.round(s.res.width*k);c.height=Math.round(s.res.height*k);const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.drawImage(s.res,0,0,c.width,c.height)}
-function recalc(s){if(!s.work)return;if(s.mode=='orig'){s.res=s.work;note(s,'')}else{const r=autoCut(s.work,s.tol);s.res=r.canvas;note(s,r.plain?'':'This background is not plain, so the cut may be rough. Try "Use AI".')}paint(s)}
+function setMode(s,m){s.mode=m;const b=blk(s);if(b)b.querySelectorAll('[data-pm]').forEach(x=>x.classList.toggle('on',x.dataset.pm==m))}
+function paint(s){const b=blk(s);if(!b||!s.work)return;const orig=s.mode=='orig'||!s.res,f=fitCanvas(orig?s.work:s.res,!orig),c=b.querySelector('canvas');c.width=150;c.height=188;const x=c.getContext('2d');x.clearRect(0,0,150,188);x.drawImage(f,0,0,150,188)}
+function recalc(s){if(!s.work)return;
+ if(s.mode=='orig'){s.res=s.work;note(s,'')}
+ else{const r=autoCut(s.work,s.tol);
+  if(!r.ok){setMode(s,'orig');s.res=s.work;note(s,'The item and the background look too alike to separate, so the original photo is kept. A darker or colored backdrop works best.')}
+  else{s.res=r.canvas;note(s,r.tuned?'The background is close to the item, so a gentler cut was used. Check the preview.':(r.plain?'':'This background is not plain, so the cut may be rough. Try "Use AI".'))}}
+ paint(s)}
 async function prepare(s){const i=await loadImg(s.f),k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);s.work=c;recalc(s)}
-$('#ff').onchange=()=>{PP=[...$('#ff').files].map(f=>({f,tol:30,mode:'auto',work:null,res:null,p:null}));
- $('#pp').innerHTML=PP.map((s,i)=>`<div class="pp"><canvas class="pc" width="150" height="150"></canvas><div><div><button type="button" class="chip" data-pm="orig">Original</button> <button type="button" class="chip on" data-pm="auto">Remove background</button> <button type="button" class="chip" data-pm="ai">Use AI</button></div><label style="display:block;margin-top:8px">Strength <input type="range" min="8" max="90" value="30" data-ps style="width:160px"></label><small class="pn"></small></div></div>`).join('');
+$('#ff').onchange=()=>{PP=[...$('#ff').files].map(f=>({f,tol:18,mode:'auto',work:null,res:null,p:null}));
+ $('#pp').innerHTML=PP.map(()=>`<div class="pp"><canvas class="pc" width="150" height="188"></canvas><div><div><button type="button" class="chip" data-pm="orig">Original</button> <button type="button" class="chip on" data-pm="auto">Remove background</button> <button type="button" class="chip" data-pm="ai">Use AI</button></div><label style="display:block;margin-top:8px">Strength <input type="range" min="5" max="70" value="18" data-ps style="width:160px"></label><small class="pn"></small></div></div>`).join('');
  PP.forEach(s=>{s.p=prepare(s)})};
 $('#pp').addEventListener('click',async e=>{const t=e.target,b=t.closest('.pp');if(!b||!t.dataset.pm)return;const s=PP[[...$('#pp').children].indexOf(b)];
- const on=m=>b.querySelectorAll('[data-pm]').forEach(x=>x.classList.toggle('on',x.dataset.pm==m));
- await s.p;s.mode=t.dataset.pm;on(s.mode);
+ await s.p;setMode(s,t.dataset.pm);
  if(s.mode=='ai'){note(s,'Loading the AI. The first time can take a minute or two...');
-  s.p=aiCut(s,n=>note(s,n)).then(r=>{s.res=r;paint(s);note(s,'')}).catch(err=>{console.warn(err);s.mode='auto';on('auto');recalc(s);note(s,'The AI could not run. Using Remove background instead.')})}
+  s.p=aiCut(s,n=>note(s,n)).then(r=>{s.res=r;paint(s);note(s,'')}).catch(err=>{console.warn(err);setMode(s,'auto');recalc(s);note(s,'The AI could not run. Using Remove background instead.')})}
  else recalc(s)});
-$('#pp').addEventListener('input',e=>{if(!e.target.hasAttribute('data-ps'))return;const s=PP[[...$('#pp').children].indexOf(e.target.closest('.pp'))];s.tol=+e.target.value;clearTimeout(s.t);s.t=setTimeout(()=>{if(s.mode=='auto')recalc(s)},120)});
+$('#pp').addEventListener('input',e=>{if(!e.target.hasAttribute('data-ps'))return;const s=PP[[...$('#pp').children].indexOf(e.target.closest('.pp'))];s.tol=+e.target.value;clearTimeout(s.t);s.t=setTimeout(()=>{if(s.mode=='auto'||(s.mode=='orig'&&s.autoFell)){setMode(s,'auto');recalc(s)}},120)});
 $('#fsv').onclick=async()=>{const m=$('#fm'),b=$('#fsv');
  if(!$('#fn').value||!$('#fp').value){m.textContent='Add a name and price.';return}
  b.disabled=true;m.textContent='Saving...';
  try{const urls=gal.slice();
   for(let i=0;i<PP.length;i++){const s=PP[i];m.textContent='Uploading photo '+(i+1)+' of '+PP.length+'...';await s.p;
    let blob,tag='';
-   if(s.mode=='orig'||!s.res){blob=await shrink(s.f,900)}else{blob=await trimCanvas(s.res);tag='-cut'}
-   const path=Date.now()+'-'+i+tag+'.'+(blob.type=='image/png'?'png':'webp');
+   if(s.mode=='orig'||!s.res){blob=await fitBlob(s.work,false)}else{blob=await fitBlob(s.res,true);tag='-cut'}
+   const path=Date.now()+'-'+i+tag+'.webp';
    const up=await sb.storage.from('products').upload(path,blob,{contentType:blob.type||'image/webp'});if(up.error)throw up.error;
    urls.push(sb.storage.from('products').getPublicUrl(path).data.publicUrl)}
   const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',images:urls,image_url:urls[0]||null,featured:$('#fx').checked};
