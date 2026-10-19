@@ -170,9 +170,9 @@ async function aiCut(s,note){
 function bboxOf(c){const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
  return x1>x0&&y1>y0?[x0,y0,x1-x0+1,y1-y0+1]:[0,0,w,h]}
-function fitCanvas(c,trim){const [bx,by,bw,bh]=trim?bboxOf(c):[0,0,c.width,c.height],W=900,H=1125,k=Math.min(.9*W/bw,.88*H/bh,2),o=document.createElement('canvas');
+function fitCanvas(c,trim){const [bx,by,bw,bh]=trim?bboxOf(c):[0,0,c.width,c.height],W=720,H=900,k=Math.min(.9*W/bw,.88*H/bh,2),o=document.createElement('canvas');
  o.width=W;o.height=H;const x=o.getContext('2d');x.imageSmoothingQuality='high';const dw=bw*k,dh=bh*k;x.drawImage(c,bx,by,bw,bh,(W-dw)/2,H-dh-Math.round(H*.04),dw,dh);return o}
-const fitBlob=(c,trim)=>new Promise(r=>fitCanvas(c,trim).toBlob(r,'image/webp',.92));
+const fitBlob=(c,trim)=>new Promise(r=>fitCanvas(c,trim).toBlob(r,'image/webp',.86));
 const blk=s=>$('#pp').children[PP.indexOf(s)];
 function note(s,t){const b=blk(s);if(b)b.querySelector('.pn').textContent=t||''}
 function setMode(s,m){s.mode=m;const b=blk(s);if(b)b.querySelectorAll('[data-pm]').forEach(x=>x.classList.toggle('on',x.dataset.pm==m))}
@@ -201,7 +201,7 @@ $('#fsv').onclick=async()=>{const m=$('#fm'),b=$('#fsv');
    let blob,tag='';
    if(s.mode=='orig'||!s.res){blob=await fitBlob(s.work,false)}else{blob=await fitBlob(s.res,true);tag='-cut'}
    const path=Date.now()+'-'+i+tag+'.webp';
-   const up=await sb.storage.from('products').upload(path,blob,{contentType:blob.type||'image/webp'});if(up.error)throw up.error;
+   const up=await sb.storage.from('products').upload(path,blob,{contentType:blob.type||'image/webp',cacheControl:'31536000'});if(up.error)throw up.error;
    urls.push(sb.storage.from('products').getPublicUrl(path).data.publicUrl)}
   const row={name:$('#fn').value,category:$('#fc').value,price:+$('#fp').value,sizes:$('#fs').value||'M',images:urls,image_url:urls[0]||null,featured:$('#fx').checked};
   const r=editing?await sb.from('products').update(row).eq('id',editing):await sb.from('products').insert(row);
