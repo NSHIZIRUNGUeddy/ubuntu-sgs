@@ -125,13 +125,8 @@ header .brand img{height:46px;width:auto}
 .cb{gap:0;padding-bottom:24px}
 .cb b{line-height:1.25}
 .cb .pr{line-height:1.2;margin-top:2px}
-.ph img{opacity:0;transition:opacity .3s}
-.ph img.ld{opacity:1}
-.card:not(.ok) .ph{background:linear-gradient(110deg,rgba(255,255,255,.03) 30%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.03) 70%);background-size:200% 100%;animation:sh 1.3s linear infinite}
-@keyframes sh{to{background-position:-200% 0}}
 </style>
-<link rel="preconnect" href="https://nuydkeunkfuimbcihehe.supabase.co" crossorigin>
-<script>window.__pf=fetch("https://nuydkeunkfuimbcihehe.supabase.co/rest/v1/products?select=*&featured=eq.true&order=created_at.desc",{headers:{apikey:"sb_publishable_0FLnva5DY0prBZ8e8eyyJw_0eYD1WkH"}}).catch(function(){return null})</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -171,45 +166,38 @@ const LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAiMAAAF7CAYAAAAAH4u2AA
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fmt=n=>Number(n).toLocaleString('en-US')+' RWF';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const sb=SB_URL.startsWith('http');
+const sb=(window.supabase&&SB_URL.startsWith('http'))?supabase.createClient(SB_URL,SB_KEY):null;
 let P=[],cat='All';
 const imgs=p=>Array.isArray(p.images)&&p.images.length?p.images:(p.image_url?[p.image_url]:[]);
 $('#logo').src=LOGO;$('#logo').style.display='block';$('#logo2').src=LOGO;$('.hero h1').style.display='none';
 function tight(){
- let G={};try{G=JSON.parse(localStorage.getItem('ugs_g')||'{}')}catch(e){}
  $$('.card').forEach(card=>{
   const im=card.querySelector('.ph img:not(.b)'),cb=card.querySelector('.cb'),ph=card.querySelector('.ph');
   if(!im||!cb)return;
-  const put=r=>{cb.style.marginTop=Math.min(0,Math.max(-ph.clientHeight*.6,-(r*ph.clientHeight-10)))+'px'};
-  if(G[im.src]!=null)put(G[im.src]);else cb.style.marginTop=-(ph.clientWidth*.06)+'px';
-  const go=()=>{const probe=new Image();probe.crossOrigin='anonymous';
-   probe.onload=()=>{try{
-    const w=60,h=Math.max(1,Math.round(60*probe.height/probe.width)),c=document.createElement('canvas');c.width=w;c.height=h;
-    const x=c.getContext('2d');x.drawImage(probe,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
-    let last=-1;for(let r=h-1;r>=0&&last<0;r--)for(let q=0;q<w;q++)if(d[(r*w+q)*4+3]>25){last=r;break}
-    if(last<0)return;
-    const fw=ph.clientWidth,fh=ph.clientHeight,p=fw*.02,s=Math.min((fw-2*p)/probe.width,(fh-2*p)/probe.height),dh=probe.height*s,off=p+((fh-2*p)-dh)/2,empty=fh-off-dh*(last+1)/h;
-    G[im.src]=empty/fh;try{localStorage.setItem('ugs_g',JSON.stringify(G))}catch(e){}put(G[im.src])}catch(e){}};
-   probe.src=im.src};
-  if(im.complete&&im.naturalWidth)go();else im.addEventListener('load',go,{once:true})})}
+  const probe=new Image();probe.crossOrigin='anonymous';
+  probe.onload=()=>{try{
+   const w=60,h=Math.max(1,Math.round(60*probe.height/probe.width)),c=document.createElement('canvas');c.width=w;c.height=h;
+   const x=c.getContext('2d');x.drawImage(probe,0,0,w,h);const d=x.getImageData(0,0,w,h).data;
+   let last=-1;for(let r=h-1;r>=0&&last<0;r--)for(let q=0;q<w;q++)if(d[(r*w+q)*4+3]>25){last=r;break}
+   if(last<0)return;
+   const fw=ph.clientWidth,fh=ph.clientHeight,p=fw*.02,s=Math.min((fw-2*p)/probe.width,(fh-2*p)/probe.height),dh=probe.height*s,off=p+((fh-2*p)-dh)/2,empty=fh-off-dh*(last+1)/h;
+   cb.style.marginTop=Math.min(0,Math.max(-fh*.6,-(empty-10)))+'px'}catch(e){cb.style.marginTop=-(ph.clientWidth*.05)+'px'}};
+  probe.onerror=()=>{cb.style.marginTop=-(ph.clientWidth*.05)+'px'};
+  probe.src=im.src})}
 let tt;addEventListener('resize',()=>{clearTimeout(tt);tt=setTimeout(tight,200)});
 function render(){
  const cats=['All',...new Set(P.map(p=>p.category))];
  $('#mcats').innerHTML=cats.slice(1).map(c=>`<a href="#shop" data-mc="${esc(c)}">${esc(c)}</a>`).join('');
  $('#chips').innerHTML=cats.length>2?cats.map(c=>`<button class="chip ${c==cat?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join(''):'';
  const ps=P.filter(p=>cat=='All'||p.category==cat);
- $('#grid').innerHTML=ps.length?ps.map((p,n)=>{const im=imgs(p);return `<div class="card${im[0]?'':' ok'}" data-v="${p.id}"><div class="ph">${im[0]?`<img src="${esc(im[0])}" alt="${esc(p.name)}" decoding="async"${n<4?' fetchpriority="'+(n<2?'high':'auto')+'"':' loading="lazy"'} onload="this.classList.add('ld');this.closest('.card').classList.add('ok')" onerror="this.closest('.card').classList.add('ok')">${im[1]?`<img class="b" src="${esc(im[1])}" alt="" loading="lazy" decoding="async">`:''}`:'UBUNTU SGs'}</div><div class="cb"><b>${esc(p.name)}</b><span class="pr">${fmt(p.price)}</span></div></div>`}).join(''):'<p style="color:var(--mu)">New drops coming soon.</p>';
+ $('#grid').innerHTML=ps.length?ps.map(p=>{const im=imgs(p);return `<div class="card" data-v="${p.id}"><div class="ph">${im[0]?`<img src="${esc(im[0])}" alt="${esc(p.name)}" loading="lazy">${im[1]?`<img class="b" src="${esc(im[1])}" alt="" loading="lazy">`:''}`:'UBUNTU SGs'}</div><div class="cb"><b>${esc(p.name)}</b><span class="pr">${fmt(p.price)}</span></div></div>`}).join(''):'<p style="color:var(--mu)">New drops coming soon.</p>';
  tight();
 }
-function skel(){$('#grid').innerHTML=Array(4).fill('<div class="card sk"><div class="ph"></div><div class="cb"><b style="opacity:0">.</b><span class="pr" style="opacity:0">.</span></div></div>').join('')}
-let lastJ='';
 async function load(){
  if(!sb){$('#grid').innerHTML='<p style="color:var(--mu)">New drops coming soon.</p>';return}
- try{const r=await (window.__pf||fetch(SB_URL+'/rest/v1/products?select=*&featured=eq.true&order=created_at.desc',{headers:{apikey:SB_KEY}}));
-  if(!r||!r.ok)throw new Error('load');const data=await r.json(),j=JSON.stringify(data);
-  try{localStorage.setItem('ugs_p',j)}catch(e){}
-  if(j!==lastJ||$('.card.sk')){lastJ=j;P=data;render()}}
- catch(e){if(!P.length)$('#grid').innerHTML='<p style="color:var(--mu)">Could not load products. Please refresh.</p>'}
+ const {data,error}=await sb.from('products').select('*').eq('featured',true).order('created_at',{ascending:false});
+ if(error){$('#grid').innerHTML='<p style="color:var(--mu)">Could not load products. Please refresh.</p>';return}
+ P=data||[];render();
 }
 function openP(id){const p=P.find(x=>x.id==id);if(!p)return;const im=imgs(p),many=im.length>1;
  $('#pvb').innerHTML=`<div class="sl"><div class="sv" id="sv">${im.length?im.map(u=>`<div><img src="${esc(u)}" alt="${esc(p.name)}"></div>`).join(''):'<div style="color:#5c5a48;font-weight:700">UBUNTU SGs</div>'}</div>${many?'<button class="ar l" data-a="-1">&#8249;</button><button class="ar r" data-a="1">&#8250;</button>':''}</div>${many?`<div class="dots" id="dots">${im.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}
@@ -243,9 +231,8 @@ document.addEventListener('click',e=>{const t=e.target;
 $('#mb').onclick=()=>$('#menu').classList.add('show');
 $('#mx').onclick=()=>$('#menu').classList.remove('show');
 $('#menu').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;if(a.dataset.mc!=null){cat=a.dataset.mc;render()}$('#menu').classList.remove('show')});
-try{const c=localStorage.getItem('ugs_p');if(c){const a=JSON.parse(c);if(Array.isArray(a)){P=a;lastJ=c}}}catch(e){}
-if(P.length)render();else skel();
+$('#grid').innerHTML='<p style="color:var(--mu)">Loading...</p>';
 load();
-try{if(sb&&!sessionStorage.getItem('v')){sessionStorage.setItem('v',1);fetch(SB_URL+'/rest/v1/visits',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:'{}'}).catch(()=>{})}}catch(e){}
+try{if(sb&&!sessionStorage.getItem('v')){sessionStorage.setItem('v',1);sb.from('visits').insert({}).then(()=>{})}}catch(e){}
 </script>
 </body></html>
