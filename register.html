@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get 11% off | Ubuntu SGs</title>
+<style>
+  :root{
+    --bg:#121212; --panel:#1b1b1b; --line:#2e2e2e;
+    --text:#d6d6d6; --muted:#8d8d8d; --strong:#f2f2f2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:"Helvetica Neue",Arial,sans-serif; line-height:1.5;
+    min-height:100vh; display:flex; justify-content:center; padding:32px 16px;
+  }
+  main{width:100%; max-width:480px}
+  .brand{color:var(--muted); font-size:14px; letter-spacing:.04em; margin:0 0 28px}
+  h1{
+    color:var(--strong); font-size:clamp(44px,12vw,64px); line-height:1;
+    margin:0 0 14px; letter-spacing:-.03em; font-weight:800;
+  }
+  .lead{margin:0 0 28px; color:var(--text)}
+  .steps{margin:0 0 28px; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-radius:6px}
+  .steps p{margin:0 0 6px; color:var(--strong); font-weight:600}
+  .steps ol{margin:0; padding-left:20px; color:var(--text)}
+  form{display:grid; gap:16px}
+  label{display:grid; gap:6px; font-size:14px; color:var(--muted)}
+  input{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    color:var(--strong); font-size:16px; padding:12px 14px; width:100%;
+  }
+  input::placeholder{color:#5c5c5c}
+  input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--strong); outline-offset:2px}
+  fieldset{border:0; padding:0; margin:0; display:grid; gap:16px}
+  legend{color:var(--strong); font-weight:600; margin-bottom:10px; padding:0}
+  button{
+    background:var(--strong); color:#121212; border:0; border-radius:6px;
+    font-size:16px; font-weight:700; padding:14px; cursor:pointer;
+  }
+  button:disabled{opacity:.6; cursor:wait}
+  .error{color:#e08a8a; font-size:14px; margin:0; min-height:1.2em}
+  .done{display:none; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:22px}
+  .done h2{color:var(--strong); margin:0 0 8px; font-size:22px}
+  .code{
+    display:block; margin:14px 0; padding:14px; text-align:center;
+    background:var(--bg); border:1px dashed var(--muted); border-radius:6px;
+    color:var(--strong); font-size:24px; font-weight:700; letter-spacing:.08em;
+  }
+  .done a{color:var(--strong)}
+  .small{color:var(--muted); font-size:13px; margin-top:22px}
+  .small a{color:var(--muted)}
+  @media (prefers-reduced-motion:no-preference){ button{transition:opacity .15s} }
+</style>
+</head>
+<body>
+<main>
+  <p class="brand">Ubuntu SGs</p>
+  <h1>11% off<br>your order.</h1>
+  <p class="lead">Bring two new followers to our Instagram and the discount is yours on everything we sell.</p>
+
+  <div class="steps">
+    <p>How it works</p>
+    <ol>
+      <li>Follow <a href="https://www.instagram.com/ubuntu.sgs" target="_blank" rel="noopener" style="color:var(--strong)">@ubuntu.sgs</a> yourself.</li>
+      <li>Get two friends to follow @ubuntu.sgs.</li>
+      <li>Register below with their Instagram handles.</li>
+      <li>We check the follows and confirm your code on WhatsApp.</li>
+    </ol>
+  </div>
+
+  <form id="form" novalidate>
+    <label>Full name
+      <input name="name" autocomplete="name" required placeholder="Your name">
+    </label>
+    <label>WhatsApp number
+      <input name="whatsapp" type="tel" autocomplete="tel" required placeholder="+250 7XX XXX XXX">
+    </label>
+    <label>Your Instagram handle
+      <input name="ig" required placeholder="@yourhandle">
+    </label>
+    <fieldset>
+      <legend>The two followers you brought</legend>
+      <label>Follower 1 Instagram handle
+        <input name="f1" required placeholder="@friend1">
+      </label>
+      <label>Follower 2 Instagram handle
+        <input name="f2" required placeholder="@friend2">
+      </label>
+    </fieldset>
+    <p class="error" id="error" role="alert"></p>
+    <button type="submit" id="submit">Register for 11% off</button>
+  </form>
+
+  <section class="done" id="done" aria-live="polite">
+    <h2>You're registered</h2>
+    <p>Your discount code:</p>
+    <span class="code" id="code"></span>
+    <p>We'll check that both followers are on @ubuntu.sgs, then confirm on WhatsApp. Show this code when you order.</p>
+    <p><a id="wa" href="#" target="_blank" rel="noopener">Message us on WhatsApp</a></p>
+  </section>
+
+  <p class="small">Questions? <a href="https://wa.me/250791740461" target="_blank" rel="noopener">WhatsApp us</a> or message <a href="https://www.instagram.com/ubuntu.sgs" target="_blank" rel="noopener">@ubuntu.sgs</a>.</p>
+</main>
+
+<script>
+  // Fill these in from your Supabase project (Settings > API). The anon key is safe to expose
+  // as long as the table's Row Level Security only allows INSERT (see the SQL I gave you).
+  const SUPABASE_URL = "";
+  const SUPABASE_ANON_KEY = "";
+  const TABLE = "discount_signups";
+  const WHATSAPP = "250791740461";
+
+  const form = document.getElementById("form");
+  const errorEl = document.getElementById("error");
+  const btn = document.getElementById("submit");
+
+  const clean = v => v.trim().replace(/^@/, "").toLowerCase();
+  const makeCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    return "UBUNTU11-" + s;
+  };
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    errorEl.textContent = "";
+    const d = Object.fromEntries(new FormData(form));
+    const name = d.name.trim(), whatsapp = d.whatsapp.trim();
+    const ig = clean(d.ig), f1 = clean(d.f1), f2 = clean(d.f2);
+
+    if (!name || !whatsapp || !ig || !f1 || !f2) { errorEl.textContent = "Fill in every field."; return; }
+    if (whatsapp.replace(/\D/g, "").length < 9) { errorEl.textContent = "Enter a valid WhatsApp number."; return; }
+    if (new Set([ig, f1, f2]).size < 3) { errorEl.textContent = "Your handle and the two followers must all be different."; return; }
+
+    const code = makeCode();
+    btn.disabled = true; btn.textContent = "Registering...";
+
+    try {
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            Prefer: "return=minimal"
+          },
+          body: JSON.stringify({ name, whatsapp, instagram: ig, follower1: f1, follower2: f2, code })
+        });
+        if (res.status === 409) throw new Error("This Instagram handle is already registered.");
+        if (!res.ok) throw new Error("Could not save your registration. Try again.");
+      }
+      const msg = `Hi Ubuntu SGs, I registered for the 11% discount.\nName: ${name}\nMy Instagram: @${ig}\nFollowers: @${f1}, @${f2}\nCode: ${code}`;
+      document.getElementById("wa").href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+      document.getElementById("code").textContent = code;
+      form.style.display = "none";
+      document.getElementById("done").style.display = "block";
+    } catch (err) {
+      errorEl.textContent = err.message || "Something went wrong. Try again.";
+      btn.disabled = false; btn.textContent = "Register for 11% off";
+    }
+  });
+</script>
+</body>
+</html>
