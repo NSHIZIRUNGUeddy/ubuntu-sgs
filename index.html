@@ -207,6 +207,7 @@ function openP(id){const p=P.find(x=>x.id==id);if(!p)return;const im=imgs(p),man
  $('#pv').classList.add('show');
  const sv=$('#sv');sv.onscroll=()=>{const i=Math.round(sv.scrollLeft/sv.clientWidth);$$('#dots i').forEach((d,k)=>d.classList.toggle('on',k==i))}}
 $$('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target==o)o.classList.remove('show')}));
+function logOrder(items,total){try{if(sb)sb.from('orders').insert({items:items,total:total,qty:items.reduce((a,c)=>a+c.q,0)}).then(function(){})}catch(e){}}
 let cart=[];try{cart=JSON.parse(localStorage.getItem('ugs_cart')||'[]')}catch(e){}
 function saveCart(){try{localStorage.setItem('ugs_cart',JSON.stringify(cart))}catch(e){}drawCart()}
 function drawCart(){const n=cart.reduce((a,c)=>a+c.q,0),tot=cart.reduce((a,c)=>a+c.q*c.price,0);
@@ -221,9 +222,9 @@ document.addEventListener('click',e=>{const t=e.target;
  if(t.dataset.ca){const p=P.find(x=>x.id==t.dataset.ca),sz=$('#pz').value,k=p.id+'|'+sz,f=cart.find(c=>c.k==k);if(f)f.q++;else cart.push({k,id:p.id,name:p.name,price:p.price,size:sz,q:1,img:imgs(p)[0]||''});saveCart();$('#pv').classList.remove('show');openCart();return}
  if(t.dataset.cq){const c=cart.find(x=>x.k==t.dataset.cq);if(c){c.q+=+t.dataset.cd;if(c.q<1)cart=cart.filter(x=>x!==c)}saveCart();return}
  if(t.dataset.cr){cart=cart.filter(x=>x.k!=t.dataset.cr);saveCart();return}
- if(t.id=='co'){const tot=cart.reduce((a,c)=>a+c.q*c.price,0);open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hi Ubuntu SGs, I want to order:\n'+cart.map((c,i)=>`${i+1}. ${c.name}, size ${c.size} x${c.q} - ${fmt(c.price*c.q)}`).join('\n')+'\nTotal: '+fmt(tot)),'_blank');return}
+ if(t.id=='co'){const tot=cart.reduce((a,c)=>a+c.q*c.price,0);logOrder(cart.map(c=>({name:c.name,size:c.size,q:c.q,price:c.price})),tot);open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hi Ubuntu SGs, I want to order:\n'+cart.map((c,i)=>`${i+1}. ${c.name}, size ${c.size} x${c.q} - ${fmt(c.price*c.q)}`).join('\n')+'\nTotal: '+fmt(tot)),'_blank');return}
  if(t.dataset.a){const sv=$('#sv');sv.scrollBy({left:sv.clientWidth*t.dataset.a,behavior:'smooth'});return}
- if(t.dataset.po){const p=P.find(x=>x.id==t.dataset.po);open('https://wa.me/'+WA+'?text='+encodeURIComponent(`Hi Ubuntu SGs, I want to order: ${p.name}, size ${$('#pz').value}, ${fmt(p.price)}.`),'_blank');return}
+ if(t.dataset.po){const p=P.find(x=>x.id==t.dataset.po);logOrder([{name:p.name,size:$('#pz').value,q:1,price:p.price}],p.price);open('https://wa.me/'+WA+'?text='+encodeURIComponent(`Hi Ubuntu SGs, I want to order: ${p.name}, size ${$('#pz').value}, ${fmt(p.price)}.`),'_blank');return}
  const v=t.closest&&t.closest('[data-v]');if(v){openP(v.dataset.v);return}
  if(t.dataset.c){cat=t.dataset.c;render()}
  if(t.dataset.o){const p=P.find(x=>x.id==t.dataset.o),s=$('#sz-'+p.id).value;
